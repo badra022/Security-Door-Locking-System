@@ -12,15 +12,16 @@
 /*********************************************************************************
  * 									INCLUDES									 *
  *********************************************************************************/
-#include"../ECUAL/lcd.h"
-#include"../ECUAL/keypad.h"
 #include"../MCAL/uart.h"
 #include"../MCAL/timer0.h"
+#include"../ECUAL/external_eeprom.h"
+#include"../ECUAL/dc_motor.h"
 /*********************************************************************************
  * 									APPLICATION									 *
  *********************************************************************************/
 #define INT_GLOBAL_ENABLE() SET_BIT(SREG , 7)
 uint8 input;
+uint8 output;
 /****************************DESCRIPTION*********************************
  * the user interface Mcu that takes the inputs from the keypad
  * and displays the status to the user(interact with the user)
@@ -37,7 +38,7 @@ uint8 input;
  * 8. any check for password has 3 trials if exceeded it will activate the buzzer for 60 sec
  ************************************************************************/
 
-void Mcu2_init(void)
+void Mcu1_init(void)
 {
 	/**************************************************
 	 * [name] : UART_ConfigType
@@ -125,20 +126,33 @@ void delay_sec(uint8 ticks)
 
 }
 
+#define PASSWORD_ADDRESS 	0x10
+#define MC2_READY			0x00
+#define MC1_READY			0x01
+uint8 password[20];
+uint16 i;
 int main(void)
 {
 	/*initializaiton code*/
-	LCD_init();
-	delay_init();
+	EEPROM_init();
+	Mcu1_init();
+	DCMOTOR_init();
 
-	INT_GLOBAL_ENABLE();
-	LCD_displayOnColRow(0 , 4 , "welcome");
-	delay_sec(5);
-	LCD_clearScreen();
-
+	EEPROM_readByte(PASSWORD_ADDRESS , output);
+	if(output != '\0'){
+		output = TRUE;
+	}
+	else
+	{
+		output = FALSE;
+	}
+	UART_sendByte(MC2_READY);
+	while(UART_receiveByte() != MC1_READY){}
+	UART_sendByte(output);
 
 	while(TRUE)
 	{
+
 		/* Application code*/
 
 	}

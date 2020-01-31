@@ -20,6 +20,7 @@
  * 									APPLICATION									 *
  *********************************************************************************/
 uint8 input;
+uint8 output;
 /****************************DESCRIPTION*********************************
  * the user interface Mcu that takes the inputs from the keypad
  * and displays the status to the user(interact with the user)
@@ -121,8 +122,11 @@ void Mcu2_init(void)
 	UART_init(&UART_configStruct);
 }
 
-
-
+#define PASSWORD_ADDRESS 	0x10
+#define MC2_READY			0x00
+#define MC1_READY			0x01
+uint8 password[20];
+uint16 i;
 int main(void)
 {
 	/*initializaiton code*/
@@ -135,9 +139,40 @@ int main(void)
 	_delay_ms(5000);
 	//LCD_displayString("hey!");
 	LCD_clearScreen();
+	//wait until mcu2 checks for existing pass in the address
+	while(UART_receiveByte() != MC2_READY){}
+	input = UART_receiveByte();
+	if(input)
+	{
+		LCD_displayString("please enter the");
+		//LCD_displayOnColRow(1 , 0 , "password: ");
+		i=0;
+		LCD_goToColRow(1 , 0);
+		while(KEYPAD_getPressed() != '=')
+		{
+			LCD_displayCharacter('*');
+			password[i] = current_key;
+			i++;
+		}
+		i=0;
 
+	}
+	else
+	{
+		LCD_displayString("please enter new");
+		//LCD_displayOnColRow(1 , 0 , "password: ");
+		i=0;
+		while(KEYPAD_getPressed() != '=')
+		{
+			password[i] = current_key;
+			i++;
+		}
+		i=0;
+	}
 
-
+	/*i=0;
+	while(UART_receiveByte() != MC2_READY){}
+	UART_sendString(password);*/
 	while(TRUE)
 	{
 		/* Application code*/

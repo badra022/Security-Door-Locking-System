@@ -19,6 +19,7 @@
 /*********************************************************************************
  * 									APPLICATION									 *
  *********************************************************************************/
+#define INT_GLOBAL_ENABLE() SET_BIT(SREG , 7)
 uint8 input;
 /****************************DESCRIPTION*********************************
  * the user interface Mcu that takes the inputs from the keypad
@@ -35,6 +36,32 @@ uint8 input;
  * 		during this step the lcd displaying th status of the door -> opening or closing
  * 8. any check for password has 3 trials if exceeded it will activate the buzzer for 60 sec
  ************************************************************************/
+
+void Mcu2_init(void)
+{
+	/**************************************************
+	 * [name] : UART_ConfigType
+	 * [Type] : Structure
+	 * [Function] : UART Module Dynamic configuration
+	 * [Members] :
+	 * 			Parity_enable enable or disable
+	 * 			Parity_type odd disable or even
+	 * 			stop_bit 1 or 2
+	 * 			character_size 5,6,7,8bits char
+	 * 			speed x or U2x
+	 * 			type  Sync or Async
+	 ***************************************************/
+
+	UART_ConfigType UART_configStruct = {	UART_PARITY_BIT_DISABLE ,
+											UART_PARITY_DISABLE ,
+											UART_1_STOP_BIT ,
+											UART_8_BIT ,
+											UART_2X ,
+											UART_ASYNCHRONOUS_OPERATION ,};
+
+	UART_init(&UART_configStruct);
+}
+
 
 
 void delay_init(void)
@@ -65,6 +92,7 @@ void delay_init(void)
 
 void eachSecDelay(void)
 {
+	LCD_displayString("hey!");
 	g_t0tick--;
 
 	/* you can write a count down counter
@@ -87,7 +115,7 @@ void delay_sec(uint8 ticks)
 	/* start the timer and initialize the TCNT0 container*/
 	TIMER0_start(TIMER0_F_CPU_64);
 
-	GLOBAL_INTERRUPT_ENABLE();
+	INT_GLOBAL_ENABLE();
 
 	/* wait until all the seconds in ticks variable are counted(CAN BE INTERRUPTED)*/
 	while(g_t0tick){}
@@ -96,46 +124,17 @@ void delay_sec(uint8 ticks)
 	TIMER0_stop();
 
 }
-void Mcu2_init(void)
-{
-	/**************************************************
-	 * [name] : UART_ConfigType
-	 * [Type] : Structure
-	 * [Function] : UART Module Dynamic configuration
-	 * [Members] :
-	 * 			Parity_enable enable or disable
-	 * 			Parity_type odd disable or even
-	 * 			stop_bit 1 or 2
-	 * 			character_size 5,6,7,8bits char
-	 * 			speed x or U2x
-	 * 			type  Sync or Async
-	 ***************************************************/
-
-	UART_ConfigType UART_configStruct = {	UART_PARITY_BIT_DISABLE ,
-											UART_PARITY_DISABLE ,
-											UART_1_STOP_BIT ,
-											UART_8_BIT ,
-											UART_2X ,
-											UART_ASYNCHRONOUS_OPERATION ,};
-
-	UART_init(&UART_configStruct);
-}
-
-
 
 int main(void)
 {
 	/*initializaiton code*/
 	LCD_init();
-	KEYPAD_init();
 	delay_init();
-	Mcu2_init();
-	GLOBAL_INTERRUPT_ENABLE();
-	LCD_displayOnColRow(0 , 4 , "welcome");
-	_delay_ms(5000);
-	//LCD_displayString("hey!");
-	LCD_clearScreen();
 
+	INT_GLOBAL_ENABLE();
+	LCD_displayOnColRow(0 , 4 , "welcome");
+	delay_sec(5);
+	LCD_clearScreen();
 
 
 	while(TRUE)

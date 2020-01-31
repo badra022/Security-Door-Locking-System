@@ -139,40 +139,18 @@ int main(void)
 	_delay_ms(5000);
 	//LCD_displayString("hey!");
 	LCD_clearScreen();
-	//wait until mcu2 checks for existing pass in the address
-	while(UART_receiveByte() != MC2_READY){}
+	/*inform the mc2 that it's ready to receive*/
+	UART_sendByte(MC1_READY);
 	input = UART_receiveByte();
+	LCD_displayString("hey!");
 	if(input)
 	{
-		LCD_displayString("please enter the");
-		//LCD_displayOnColRow(1 , 0 , "password: ");
-		i=0;
-		LCD_goToColRow(1 , 0);
-		while(KEYPAD_getPressed() != '=')
-		{
-			LCD_displayCharacter('*');
-			password[i] = current_key;
-			i++;
-		}
-		i=0;
-
+		LCD_displayString("enter new pass:");
 	}
 	else
 	{
-		LCD_displayString("please enter new");
-		//LCD_displayOnColRow(1 , 0 , "password: ");
-		i=0;
-		while(KEYPAD_getPressed() != '=')
-		{
-			password[i] = current_key;
-			i++;
-		}
-		i=0;
+		LCD_displayString("enter pass :");
 	}
-
-	/*i=0;
-	while(UART_receiveByte() != MC2_READY){}
-	UART_sendString(password);*/
 	while(TRUE)
 	{
 		/* Application code*/

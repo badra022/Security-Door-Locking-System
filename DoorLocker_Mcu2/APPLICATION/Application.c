@@ -126,7 +126,7 @@ void delay_sec(uint8 ticks)
 
 }
 
-#define PASSWORD_ADDRESS 	0x10
+#define PASSWORD_ADDRESS 	(uint16)0x10
 #define MC2_READY			0x00
 #define MC1_READY			0x01
 uint8 password[20];
@@ -138,15 +138,14 @@ int main(void)
 	Mcu1_init();
 	DCMOTOR_init();
 
-	EEPROM_readByte(PASSWORD_ADDRESS , output);
-	if(output != '\0'){
+	EEPROM_readByte(PASSWORD_ADDRESS , &output);
+	if(output == '\0'){
 		output = TRUE;
 	}
 	else
 	{
 		output = FALSE;
 	}
-	UART_sendByte(MC2_READY);
 	while(UART_receiveByte() != MC1_READY){}
 	UART_sendByte(output);
 

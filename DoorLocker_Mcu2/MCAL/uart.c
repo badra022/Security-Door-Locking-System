@@ -68,7 +68,7 @@ uint8 UART_receiveByte(void)
 {
 	while(BIT_IS_CLEAR(UCSRA ,RXC));
 
-	g_UART_CurrentReading = UDR;
+	//g_UART_CurrentReading = UDR;
 
 	return UDR;
 }

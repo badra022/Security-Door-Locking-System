@@ -68,12 +68,12 @@ uint8 UART_receiveByte(void)
 {
 	while(BIT_IS_CLEAR(UCSRA ,RXC));
 
-	g_UART_CurrentReading = UDR;
+	//g_UART_CurrentReading = UDR;
 
 	return UDR;
 }
 #endif
-void UART_setReceiveCallBack(volatile void (*a_ptr)(void))
+void UART_setReceiveCallBack(void (*a_ptr)(void))
 {
 	g_UART_receiveByteFunc_ptr = a_ptr;
 }

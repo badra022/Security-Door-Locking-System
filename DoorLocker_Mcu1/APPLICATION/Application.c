@@ -19,7 +19,7 @@
 /***************************************************************************************
  * 									GLOBAL VARIABLES									*
  ***************************************************************************************/
-#define PASSWORD_ADDRESS 	0x10
+#define PASSWORD_ADDRESS 	(uint16)0x10
 #define MC2_READY			0x00
 /* to inform MC1 that MC2 ready to receive */
 #define MC1_READY			0x01
@@ -85,23 +85,24 @@ void TIMER0_delay_init(void)
 
 
 
-	TIMER0_configType TIMER0_configStruct = { 	TIMER0_CTC ,
+	TIMER0_configType TIMER0_configStruct = { 	TIMER0_NORMAL ,
 												TIMER0_NORMAL_OUTPUT ,
-												TIMER0_F_CPU_64 ,
-												ENABLE ,
+												TIMER0_F_CPU_1024 ,
 												DISABLE ,
-												125 ,
-												0	};
+												ENABLE ,
+												0 ,
+												0};
 		TIMER0_init(&TIMER0_configStruct);
-		TIMER0_setCallBackCompareMode(toggle);
+		TIMER0_setCallBackOverflowMode(toggle);
 
 }
-void TIMER0_delay_ms(sint32 milliseconds)
+void TIMER0_delay(uint16 seconds)
 {
 	DELAY_DONE = FALSE;
-	g_t0tick = milliseconds; // till 65 second
-	TIMER0_start(TIMER0_F_CPU_64);
+	g_t0tick = 30 * seconds; // for 30 overflow that will exit the timing after tick 30
+	TIMER0_start(TIMER0_F_CPU_1024);
 	while(!DELAY_DONE){}
+	TIMER0_stop();
 }
 
 
@@ -137,13 +138,18 @@ int main(void)
 	/*initializaiton code*/
 	LCD_init();
 	KEYPAD_init();
-	TIMER0_delay_init();
 	Mcu2_init();
 	GLOBAL_INTERRUPT_ENABLE();
 	LCD_displayOnColRow(0 , 4 , (uint8*)"welcome");
-	TIMER0_delay_ms(5000);
-	//LCD_displayString("hey!");
+	TIMER0_delay_init();
+	TIMER0_delay(3);
+	LCD_displayString((uint8*)"hey!");
+	//LCD_displayString((uint8*)"hey!");
 	LCD_clearScreen();
+	/******************************************************************
+	 * permanent task : try timer1 for the delay and figure the bug in timer0 another time
+	 ******************************************************************/
+
 
 	/*continue */
 

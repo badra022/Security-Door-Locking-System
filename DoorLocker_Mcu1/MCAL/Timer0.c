@@ -13,14 +13,19 @@
 /*********************************************************************************
  * 									INCLUDES									 *
  *********************************************************************************/
+
 #include"timer0.h"
-#include"../ECUAL/lcd.h"
+
 /*********************************************************************************
 * 									Global Variables							 *
  *********************************************************************************/
+
 static void (*volatile g_T0CompareInterruptFunc_ptr)(void) = NULL;
+
 static void (*volatile g_T0OverflowInterruptFunc_ptr)(void) = NULL;
-volatile uint8 g_t0tick = 0;
+
+volatile uint16 g_t0tick = 0;
+
 /*********************************************************************************
 * 									Functions Definition						 *
  *********************************************************************************/
@@ -28,62 +33,84 @@ void TIMER0_setCallBackCompareMode(void (*a_ptr)(void))
 {
 	g_T0CompareInterruptFunc_ptr = a_ptr;
 }
+
 void TIMER0_setCallBackOverflowMode(void (*a_ptr)(void))
 {
 	g_T0OverflowInterruptFunc_ptr = a_ptr;
 }
+
 void TIMER0_init(const TIMER0_configType * config_ptr)
 {
-	TCCR0 = 0;
-	TCCR0 = config_ptr->mode;
+	/* setting the mode -> ctc , normal or pwm */
+	TCCR0 = config_ptr->mode | ((config_ptr->output_mode) << COM00);
+
+	/* setting the initial values selected in the compare reg and counting reg (first of all)*/
+	TCNT0 = config_ptr->initial_value;
+	OCR0 = config_ptr->compare_value;
+
+	/* setting the force compare bit 0 according  to the mode of the timer*/
 	if(config_ptr->mode == TIMER0_NORMAL || config_ptr->mode == TIMER0_CTC)
 	{
+		/* in case of non-pwm mode */
 		SET_BIT(TCCR0 , FOC0);
 	}
 	else
 	{
+		/* in case of a pwm mode */
 		CLEAR_BIT(TCCR0 , FOC0);
 	}
-	TCCR0 |= ((config_ptr->output_mode) << 4) | config_ptr ->clock;
-	TCNT0 = config_ptr->initial_value;
-	OCR0 = config_ptr->compare_value;
 	if(config_ptr->output_mode != TIMER0_NORMAL_OUTPUT )
 	{
+		/* for the signal pwm output pin (if pwm mode configured only) */
 		SET_BIT(DDRB , 3);
 		CLEAR_BIT(PORTB , 3);
 	}
-	TIMSK |= config_ptr->overflow_interrupt | ((config_ptr ->compare_interrupt)<<OCIE0);
+	/* setting the interrupt modes */
+	TIMSK |= (config_ptr->overflow_interrupt << TOIE0) | ((config_ptr ->compare_interrupt)<<OCIE0);
+
+	/* starting the timer NOW after all settings is done*/
+	TCCR0 |=config_ptr ->clock;
+
+	/* enabling the global interrupt */
+	GLOBAL_INTERRUPT_ENABLE();
 }
+
 void TIMER0_start(TIMER0_clock clk)
 {
-	TCNT0 = 0;
+	/* setting the prescaler thus enabling the clock then initializing the counter */
 	TCCR0 |= clk;
+	TCNT0 = 0;
 }
+
+
 void TIMER0_setCompareValue(uint8 value)
 {
 	OCR0 = value;
 }
+
 void TIMER0_stop(void)
 {
 	CLEAR_BIT(TCCR0 , 0);
 	CLEAR_BIT(TCCR0 , 1);
 	CLEAR_BIT(TCCR0 , 2);
 }
+
 /*********************************************************************************
 * 								Interrupt service routines							 *
  *********************************************************************************/
 ISR(TIMER0_COMP_vect)
 {
-	LCD_displayString("hey!");
-	g_t0tick--;
-
+	/* the corresponding interrupt service routine function (IF EXIST) will be executed*/
 	if(g_T0CompareInterruptFunc_ptr != NULL)
 	{
 		g_T0CompareInterruptFunc_ptr();
 	}
 }
+
+
 ISR(TIMER0_OVF_vect)
 {
+	/* the corresponding interrupt service routine function (IF EXIST) will be executed*/
 	if(g_T0OverflowInterruptFunc_ptr != NULL)
 	{
 		g_T0OverflowInterruptFunc_ptr();

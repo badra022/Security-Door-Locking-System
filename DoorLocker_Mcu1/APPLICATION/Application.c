@@ -1,10 +1,10 @@
 /******************************************************************************
  *
- * Module: Lcd
+ * Module: timer0 , uart , i2c
  *
- * File Name: lcd.h
+ * File Name: application.h
  *
- * Description: lcd header file
+ * Description: app src file
  *
  * Author: Ahmed Mohamed
  *
@@ -16,11 +16,30 @@
 #include"../ECUAL/keypad.h"
 #include"../MCAL/uart.h"
 #include"../MCAL/timer0.h"
+/***************************************************************************************
+ * 									GLOBAL VARIABLES									*
+ ***************************************************************************************/
+#define PASSWORD_ADDRESS 	0x10
+#define MC2_READY			0x00
+/* to inform MC1 that MC2 ready to receive */
+#define MC1_READY			0x01
+/* to inform MC2 that MC1 ready to receive */
+/*****************************************************************************
+ *  so the protocol goes as follows
+ * 1. if MC1 finished some code and want to transmit byte or string to MC2
+ * 	it must check at MC2_READY flag , once it's received it can transmit the data to MC2
+ * 2. if MC2 finished some code and want to transmit byte or string to MC2
+ * 	it must check at MC1_READY flag , once it's received it can transmit the data to MC1
+ *****************************************************************************/
+uint8 password[20];
+uint16 i;
+uint8 input;
+uint8 output;
+uint8 DELAY_DONE;
 /*********************************************************************************
  * 									APPLICATION									 *
  *********************************************************************************/
-uint8 input;
-uint8 output;
+
 /****************************DESCRIPTION*********************************
  * the user interface Mcu that takes the inputs from the keypad
  * and displays the status to the user(interact with the user)
@@ -37,9 +56,19 @@ uint8 output;
  * 8. any check for password has 3 trials if exceeded it will activate the buzzer for 60 sec
  ************************************************************************/
 
-
-void delay_init(void)
+void toggle(void)
 {
+	// toggle the led
+	g_t0tick--;
+	if(!g_t0tick)
+	{
+		DELAY_DONE = TRUE;
+	}
+
+}
+void TIMER0_delay_init(void)
+{
+
 	/**************************************************
 	 * [name] : TIMER0_configType
 	 * [Type] : Structure
@@ -53,50 +82,29 @@ void delay_init(void)
 	 * 			compare_value 0 -> 255
 	 * 			initial_value 0 -> 255
 	 ***************************************************/
-	TIMER0_configType TIMER0_configStruct = {	TIMER0_CTC ,
+
+
+
+	TIMER0_configType TIMER0_configStruct = { 	TIMER0_CTC ,
 												TIMER0_NORMAL_OUTPUT ,
 												TIMER0_F_CPU_64 ,
 												ENABLE ,
 												DISABLE ,
-												 125 ,
-												 0};
+												125 ,
+												0	};
+		TIMER0_init(&TIMER0_configStruct);
+		TIMER0_setCallBackCompareMode(toggle);
 
-	TIMER0_init(&TIMER0_configStruct);
 }
-
-void eachSecDelay(void)
+void TIMER0_delay_ms(sint32 milliseconds)
 {
-	g_t0tick--;
-
-	/* you can write a count down counter
-	 * that will get executed each 1 second here*/
-}
-void delay_sec(uint8 ticks)
-{
-	/******************
-	for(uint8 i = 0 ; i< ticks ; i++)
-	{
-		while(BIT_IS_CLEAR(TIFR , OCF0)){}
-		SET_BIT(TIFR , OCF0);
-	}
-	*******************/
-	/* set the number of seconds the timer will count*/
-	g_t0tick = ticks;
-	/* put the code that decrement the number of seconds counted in the ISR*/
-	TIMER0_setCallBackCompareMode(eachSecDelay);
-
-	/* start the timer and initialize the TCNT0 container*/
+	DELAY_DONE = FALSE;
+	g_t0tick = milliseconds; // till 65 second
 	TIMER0_start(TIMER0_F_CPU_64);
-
-	GLOBAL_INTERRUPT_ENABLE();
-
-	/* wait until all the seconds in ticks variable are counted(CAN BE INTERRUPTED)*/
-	while(g_t0tick){}
-
-	/* stop the timer clock signals */
-	TIMER0_stop();
-
+	while(!DELAY_DONE){}
 }
+
+
 void Mcu2_init(void)
 {
 	/**************************************************
@@ -121,43 +129,29 @@ void Mcu2_init(void)
 
 	UART_init(&UART_configStruct);
 }
-
-#define PASSWORD_ADDRESS 	0x10
-#define MC2_READY			0x00
-#define MC1_READY			0x01
-uint8 password[20];
-uint16 i;
+/***************************************************************************************
+ * 									MAIN  FUNCTION										*
+ ***************************************************************************************/
 int main(void)
 {
 	/*initializaiton code*/
 	LCD_init();
 	KEYPAD_init();
-	delay_init();
+	TIMER0_delay_init();
 	Mcu2_init();
 	GLOBAL_INTERRUPT_ENABLE();
-	LCD_displayOnColRow(0 , 4 , "welcome");
-	_delay_ms(5000);
+	LCD_displayOnColRow(0 , 4 , (uint8*)"welcome");
+	TIMER0_delay_ms(5000);
 	//LCD_displayString("hey!");
 	LCD_clearScreen();
-	/*inform the mc2 that it's ready to receive*/
-	UART_sendByte(MC1_READY);
-	input = UART_receiveByte();
-	LCD_displayString("hey!");
-	if(input)
-	{
-		LCD_displayString("enter new pass:");
-	}
-	else
-	{
-		LCD_displayString("enter pass :");
-	}
+
+	/*continue */
+
 	while(TRUE)
 	{
+
 		/* Application code*/
 
 	}
 
-
-
 }
-//current task -> test the timer0 module with delay function in another small project

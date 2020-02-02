@@ -1,10 +1,10 @@
 /******************************************************************************
  *
- * Module: Lcd
+ * Module: timer0 , uart , i2c
  *
- * File Name: lcd.h
+ * File Name: application.h
  *
- * Description: lcd header file
+ * Description: app src file
  *
  * Author: Ahmed Mohamed
  *
@@ -16,12 +16,30 @@
 #include"../MCAL/timer0.h"
 #include"../ECUAL/external_eeprom.h"
 #include"../ECUAL/dc_motor.h"
+/***************************************************************************************
+ * 									GLOBAL VARIABLES									*
+ ***************************************************************************************/
+#define PASSWORD_ADDRESS 	(uint16)0x10
+#define MC2_READY			0x00
+/* to inform MC1 that MC2 ready to receive */
+#define MC1_READY			0x01
+/* to inform MC2 that MC1 ready to receive */
+/*****************************************************************************
+ *  so the protocol goes as follows
+ * 1. if MC1 finished some code and want to transmit byte or string to MC2
+ * 	it must check at MC2_READY flag , once it's received it can transmit the data to MC2
+ * 2. if MC2 finished some code and want to transmit byte or string to MC2
+ * 	it must check at MC1_READY flag , once it's received it can transmit the data to MC1
+ *****************************************************************************/
+uint8 password[20];
+uint16 i;
+uint8 input;
+uint8 output;
+uint8 DELAY_DONE;
 /*********************************************************************************
  * 									APPLICATION									 *
  *********************************************************************************/
-#define INT_GLOBAL_ENABLE() SET_BIT(SREG , 7)
-uint8 input;
-uint8 output;
+
 /****************************DESCRIPTION*********************************
  * the user interface Mcu that takes the inputs from the keypad
  * and displays the status to the user(interact with the user)
@@ -63,74 +81,9 @@ void Mcu1_init(void)
 	UART_init(&UART_configStruct);
 }
 
-
-
-void delay_init(void)
-{
-	/**************************************************
-	 * [name] : TIMER0_configType
-	 * [Type] : Structure
-	 * [Function] : TIMER0 Module Dynamic configuration
-	 * [Members] :
-	 * 			mode TIMER0_NORMAL or TIMER0_PWM_PHASE_CORRECT or TIMER0_CTC etc..
-	 * 			output_mode TIMER0_NORMAL_OUTPUT or TIMER0_TOGGLE_OUTPUT etc..
-	 * 			clock TIMER0_NON , F_CPU , 8 , 64 , 256 , 1024
-	 * 			compare_interrupt enable or disable
-	 * 			overflow_interrupt enable or disable
-	 * 			compare_value 0 -> 255
-	 * 			initial_value 0 -> 255
-	 ***************************************************/
-	TIMER0_configType TIMER0_configStruct = {	TIMER0_CTC ,
-												TIMER0_NORMAL_OUTPUT ,
-												TIMER0_F_CPU_64 ,
-												ENABLE ,
-												DISABLE ,
-												 125 ,
-												 0};
-
-	TIMER0_init(&TIMER0_configStruct);
-}
-
-void eachSecDelay(void)
-{
-	LCD_displayString("hey!");
-	g_t0tick--;
-
-	/* you can write a count down counter
-	 * that will get executed each 1 second here*/
-}
-void delay_sec(uint8 ticks)
-{
-	/******************
-	for(uint8 i = 0 ; i< ticks ; i++)
-	{
-		while(BIT_IS_CLEAR(TIFR , OCF0)){}
-		SET_BIT(TIFR , OCF0);
-	}
-	*******************/
-	/* set the number of seconds the timer will count*/
-	g_t0tick = ticks;
-	/* put the code that decrement the number of seconds counted in the ISR*/
-	TIMER0_setCallBackCompareMode(eachSecDelay);
-
-	/* start the timer and initialize the TCNT0 container*/
-	TIMER0_start(TIMER0_F_CPU_64);
-
-	INT_GLOBAL_ENABLE();
-
-	/* wait until all the seconds in ticks variable are counted(CAN BE INTERRUPTED)*/
-	while(g_t0tick){}
-
-	/* stop the timer clock signals */
-	TIMER0_stop();
-
-}
-
-#define PASSWORD_ADDRESS 	(uint16)0x10
-#define MC2_READY			0x00
-#define MC1_READY			0x01
-uint8 password[20];
-uint16 i;
+/***************************************************************************************
+ * 									MAIN  FUNCTION										*
+ ***************************************************************************************/
 int main(void)
 {
 	/*initializaiton code*/
@@ -138,16 +91,7 @@ int main(void)
 	Mcu1_init();
 	DCMOTOR_init();
 
-	EEPROM_readByte(PASSWORD_ADDRESS , &output);
-	if(output == '\0'){
-		output = TRUE;
-	}
-	else
-	{
-		output = FALSE;
-	}
-	while(UART_receiveByte() != MC1_READY){}
-	UART_sendByte(output);
+	 /* continue */
 
 	while(TRUE)
 	{
@@ -156,7 +100,4 @@ int main(void)
 
 	}
 
-
-
 }
-//current task -> test the timer0 module with delay function in another small project

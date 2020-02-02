@@ -14,7 +14,9 @@
 /*********************************************************************************
  * 									INCLUDES									 *
  *********************************************************************************/
-#include"../MCAL/timer0.h"
+#include"../COMPLEX DRIVERS/micro_config.h"
+#include"../COMPLEX DRIVERS/common_macros.h"
+#include"../COMPLEX DRIVERS/std_types.h"
 /*********************************************************************************
  * 							Definitions and Configurations						 *
  *********************************************************************************/
@@ -22,15 +24,20 @@
 #define DC_MOTOR_PORT	PORTB
 #define IN1				2
 #define IN2				1
-#define EN1				OC0
+#define EN1				0
 /*********************************************************************************
  * 								Function Declarations							 *
  *********************************************************************************/
 void DCMOTOR_init(void);
+
 void DCMOTOR_setSpeed(uint8 speed);
+
 void DCMOTOR_toggleMove(void);
+
 void DCMOTOR_move(void);
+
 void DCMOTOR_stop(void);
+
 
 
 #endif /* DC_MOTOR_H_ */

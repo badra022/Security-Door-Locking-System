@@ -20,16 +20,16 @@ void DCMOTOR_init(void)
 {
 	SET_BIT(DC_MOTOR_DIR , IN1);
 	SET_BIT(DC_MOTOR_DIR , IN2);
+	SET_BIT(DC_MOTOR_DIR , EN1);
 }
 void DCMOTOR_setSpeed(uint8 speed)
 {
-	TIMER0_setCompareValue(speed);
+	SET_BIT(DC_MOTOR_PORT , EN1);
 }
 void DCMOTOR_move(void)
 {
 	SET_BIT(DC_MOTOR_PORT , IN1);
 	CLEAR_BIT(DC_MOTOR_PORT , IN2);
-
 }
 void DCMOTOR_toggleMove(void)
 {

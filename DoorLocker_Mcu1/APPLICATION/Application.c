@@ -16,6 +16,7 @@
 #include"../ECUAL/keypad.h"
 #include"../MCAL/uart.h"
 #include"../MCAL/timer0.h"
+#include"../MCAL/timer1.h"
 /***************************************************************************************
  * 									GLOBAL VARIABLES									*
  ***************************************************************************************/
@@ -56,54 +57,6 @@ uint8 DELAY_DONE;
  * 8. any check for password has 3 trials if exceeded it will activate the buzzer for 60 sec
  ************************************************************************/
 
-void toggle(void)
-{
-	// toggle the led
-	g_t0tick--;
-	if(!g_t0tick)
-	{
-		DELAY_DONE = TRUE;
-	}
-
-}
-void TIMER0_delay_init(void)
-{
-
-	/**************************************************
-	 * [name] : TIMER0_configType
-	 * [Type] : Structure
-	 * [Function] : TIMER0 Module Dynamic configuration
-	 * [Members] :
-	 * 			mode TIMER0_NORMAL or TIMER0_PWM_PHASE_CORRECT or TIMER0_CTC etc..
-	 * 			output_mode TIMER0_NORMAL_OUTPUT or TIMER0_TOGGLE_OUTPUT etc..
-	 * 			clock TIMER0_NON , F_CPU , 8 , 64 , 256 , 1024
-	 * 			compare_interrupt enable or disable
-	 * 			overflow_interrupt enable or disable
-	 * 			compare_value 0 -> 255
-	 * 			initial_value 0 -> 255
-	 ***************************************************/
-
-
-
-	TIMER0_configType TIMER0_configStruct = { 	TIMER0_NORMAL ,
-												TIMER0_NORMAL_OUTPUT ,
-												TIMER0_F_CPU_1024 ,
-												DISABLE ,
-												ENABLE ,
-												0 ,
-												0};
-		TIMER0_init(&TIMER0_configStruct);
-		TIMER0_setCallBackOverflowMode(toggle);
-
-}
-void TIMER0_delay(uint16 seconds)
-{
-	DELAY_DONE = FALSE;
-	g_t0tick = 30 * seconds; // for 30 overflow that will exit the timing after tick 30
-	TIMER0_start(TIMER0_F_CPU_1024);
-	while(!DELAY_DONE){}
-	TIMER0_stop();
-}
 
 
 void Mcu2_init(void)
@@ -130,6 +83,54 @@ void Mcu2_init(void)
 
 	UART_init(&UART_configStruct);
 }
+/***********************************test*********************************************/
+uint8 DELAY_DONE;
+void toggle(void)
+{
+	// toggle the led
+	g_t1tick--;
+	if(!g_t1tick)
+	{
+		DELAY_DONE = TRUE;
+	}
+
+}
+void TIMER1_delay_init(void)
+{
+
+/******************************************************
+ * [name] : TIMER1_configType
+ * [Type] : Structure
+ * [Function] : TIMER1 Module Dynamic configuration
+ * [Members] :
+ * 			mode TIMER1_NORMAL or TIMER1_CTC (16bit only so it's not a conig for me)
+ * 			output_mode TIMER1_NORMAL_OUTPUT or TIMER1_TOGGLE_OUTPUT etc..
+ * 			compare_interrupt enable or disable
+ * 			overflow_interrupt enable or disable
+ * 			compare_value 0 -> 65535
+ * 			initial_value 0 -> 65535
+ ***************************************************/
+
+
+
+	TIMER1_configType TIMER1_configStruct = { 	TIMER1_CTC ,
+												TIMER0_F_CPU_1024 ,
+												ENABLE ,
+												DISABLE ,
+												7812 ,
+												0	};
+		TIMER1_init(&TIMER1_configStruct);
+		TIMER1_setCallBackCompareMode(toggle);
+
+}
+void TIMER1_delay(uint8 seconds)
+{
+	DELAY_DONE = FALSE;
+	g_t1tick =seconds;
+	TIMER1_start(TIMER0_F_CPU_1024);
+	while(!DELAY_DONE){}
+}
+/***********************************test*********************************************/
 /***************************************************************************************
  * 									MAIN  FUNCTION										*
  ***************************************************************************************/
@@ -138,11 +139,11 @@ int main(void)/*MCU1*/
 	/*initializaiton code*/
 	LCD_init();
 	KEYPAD_init();
+	TIMER1_delay_init();
 	Mcu2_init();
 	GLOBAL_INTERRUPT_ENABLE();
 	LCD_displayOnColRow(0 , 4 , (uint8*)"welcome");
-	TIMER0_delay_init();
-	TIMER0_delay(3);
+	TIMER1_delay(3);
 	LCD_displayString((uint8*)"hey!");
 	//LCD_displayString((uint8*)"hey!");
 	LCD_clearScreen();

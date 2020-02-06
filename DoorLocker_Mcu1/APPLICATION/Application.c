@@ -70,6 +70,7 @@ void Mc2_init(void)
 /***************************************************************************************
  * 									GLOBAL VARIABLES									*
  ***************************************************************************************/
+#define NEW_PASSWORD		0x65
 #define PASSWORD_ADDRESS 	0x0010
 #define MC2_READY			0xFC
 /* to inform MC1 that MC2 ready to receive */
@@ -82,12 +83,13 @@ void Mc2_init(void)
  * 2. if MC2 finished some code and want to transmit byte or string to MC2
  * 	it must check at MC1_READY flag , once it's received it can transmit the data to MC1
  *****************************************************************************/
-uint8 password[20] = "123456";
+uint8 password[20];
 uint8 same = FALSE;
 uint16 i;
 uint8 input;
 uint8 output;
 uint8 DELAY_DONE;
+uint8 cnt = 0;
 /***************************************************************************************
  * 									MAIN  FUNCTION										*
  ***************************************************************************************/
@@ -122,8 +124,8 @@ int main(void)/*MCU1*/
 	UART_receiveString(password);
 	_delay_ms(100);
 	LCD_displayString(password);
-#if 0
-	if(*password == "44444") /*new launch*/
+	_delay_ms(5000);
+	if(password == "444444") /*new launch*/
 	{
 		LCD_clearScreen();
 		LCD_displayOnColRow(0 , 0 , (uint8*)"enter new pass:");
@@ -135,7 +137,7 @@ int main(void)/*MCU1*/
 			password[i] = current_key;
 			i++;
 		}
-		while(!same)
+		while(!same && cnt < 4)
 		{
 			same = TRUE;
 			LCD_clearScreen();
@@ -155,19 +157,31 @@ int main(void)/*MCU1*/
 			{
 				LCD_clearScreen();
 				LCD_displayOnColRow(0 ,4 ,(uint8*)"Wrong password!");
+				cnt++;
 				_delay_ms(2000);
 			}
 			else
 			{
 				LCD_clearScreen();
 				LCD_displayString((uint8*)"welcome");
+				cnt = 0;
 				_delay_ms(2000);
 			}
+		}
+		if(cnt == 4)
+		{
+			LCD_clearScreen();
+			LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
+			SET_BIT(DDRD , 6);
+			SET_BIT(PORTD , 6);
+			_delay_ms(60000);
+			CLEAR_BIT(PORTD , 6);
 		}
 	}
 	else /*previously launched */
 	{
-		while(!same)
+		cnt = 0;
+		while(!same && cnt < 4)
 		{
 			same = TRUE;
 			LCD_clearScreen();
@@ -185,32 +199,44 @@ int main(void)/*MCU1*/
 			}
 			if(!same)
 			{
+				cnt++;
 				LCD_clearScreen();
 				LCD_displayOnColRow(0 ,4 ,(uint8*)"Wrong password!");
 				_delay_ms(2000);
 			}
 			else
 			{
+				cnt = 0;
 				LCD_clearScreen();
 				LCD_displayString((uint8*)"welcome");
 				_delay_ms(2000);
 			}
 		}
+		if(cnt == 4)
+		{
+			LCD_clearScreen();
+			LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
+			SET_BIT(DDRD , 6);
+			SET_BIT(PORTD , 6);
+			_delay_ms(60000);
+			CLEAR_BIT(PORTD , 6);
+		}
 	}
-#endif
 	while(TRUE)
 	{
-#if 0
+
 		/* Application code*/
 		LCD_clearScreen();
 		LCD_displayOnColRow(0 , 0 , "+ : open door");
-		LCD_displayOnColRow(0 , 0 , "- : change pass");
+		LCD_displayOnColRow(1 , 0 , "- : change pass");
 		same = FALSE;
+		cnt = 0;
 		if(KEYPAD_getPressed() == '+')
 		{
 
-			while(!same)
+			while(!same && cnt < 4)
 			{
+				cnt = 0;
 				same = TRUE;
 				LCD_clearScreen();
 				LCD_displayOnColRow(0 , 0 , (uint8*)"enter the pass:");
@@ -227,25 +253,38 @@ int main(void)/*MCU1*/
 				}
 				if(!same)
 				{
+					cnt++;
 					LCD_clearScreen();
 					LCD_displayOnColRow(0 ,4 ,(uint8*)"Wrong password!");
 					_delay_ms(2000);
 				}
 				else
 				{
+					cnt = 0;
 					LCD_clearScreen();
 					LCD_displayString((uint8*)"welcome");
 					_delay_ms(2000);
 				}
 			}
-
-
-			while(UART_receiveByte() != MC2_READY){}
-			UART_sendByte(TRUE);
+			if(cnt == 4)
+			{
+				LCD_clearScreen();
+				LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
+				SET_BIT(DDRD , 6);
+				SET_BIT(PORTD , 6);
+				_delay_ms(60000);
+				CLEAR_BIT(PORTD , 6);
+			}
+			else
+			{
+				while(UART_receiveByte() != MC2_READY){}
+				UART_sendByte(TRUE);
+			}
 		}
 		else if(current_key == '-')
 		{
-			while(!same)
+			cnt = 0;
+			while(!same && cnt < 4)
 			{
 				same = TRUE;
 				LCD_clearScreen();
@@ -263,67 +302,82 @@ int main(void)/*MCU1*/
 				}
 				if(!same)
 				{
+					cnt++;
 					LCD_clearScreen();
 					LCD_displayOnColRow(0 ,4 ,(uint8*)"Wrong password!");
 					_delay_ms(2000);
 				}
 				else
 				{
+					cnt = 0;
 					LCD_clearScreen();
-					LCD_displayString((uint8*)"welcome");
+					LCD_displayString((uint8*)"Correct");
 					_delay_ms(2000);
 				}
 			}
 			/******************************************/
-			same = FALSE;
-			LCD_clearScreen();
-			LCD_displayOnColRow(0 , 0 , (uint8*)"enter new pass:");
-			int i = 0;
-			LCD_goToColRow(1 , 0);
-			while(KEYPAD_getPressed() != '=')
+			if(cnt == 4)
 			{
-				LCD_displayCharacter('*');
-				password[i] = current_key;
-				i++;
-			}
-			while(!same)
-			{
-				same = TRUE;
 				LCD_clearScreen();
-				LCD_displayOnColRow(0 , 0 , (uint8*)"confirm :");
+				LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
+				SET_BIT(DDRD , 6);
+				SET_BIT(PORTD , 6);
+				_delay_ms(60000);
+				CLEAR_BIT(PORTD , 6);
+			}
+			else
+			{
+				same = FALSE;
+				LCD_clearScreen();
+				LCD_displayOnColRow(0 , 0 , (uint8*)"enter new pass:");
 				int i = 0;
 				LCD_goToColRow(1 , 0);
 				while(KEYPAD_getPressed() != '=')
 				{
 					LCD_displayCharacter('*');
-					if(current_key != password[i])
-					{
-						same = FALSE;
-					}
+					password[i] = current_key;
 					i++;
 				}
-				if(!same)
+				while(!same)
 				{
+					same = TRUE;
 					LCD_clearScreen();
-					LCD_displayOnColRow(0 ,4 ,(uint8*)"Wrong password!");
-					_delay_ms(2000);
-				}
-				else
-				{
-					LCD_clearScreen();
-					LCD_displayOnColRow(0,0,(uint8*)"Success!");
-					_delay_ms(2000);
+					LCD_displayOnColRow(0 , 0 , (uint8*)"confirm :");
+					int i = 0;
+					LCD_goToColRow(1 , 0);
+					while(KEYPAD_getPressed() != '=')
+					{
+						LCD_displayCharacter('*');
+						if(current_key != password[i])
+						{
+							same = FALSE;
+						}
+						i++;
+					}
+					if(!same)
+					{
+						LCD_clearScreen();
+						LCD_displayOnColRow(0 ,4 ,(uint8*)"Wrong password!");
+						_delay_ms(2000);
+					}
+					else
+					{
+						LCD_clearScreen();
+						LCD_displayOnColRow(0,0,(uint8*)"Success!");
+						_delay_ms(2000);
+					}
 				}
 			}
+
 		}
-#endif
+
 	}
 
 
 }
 /************************************ REMINDER LIST ************************
- * 1. the counter 3 times that calls the buzzer
+ * 1. the counter 3 times that calls the buzzer done
  * 2. the code that moves the motor cw and A-cw
- * 3. uart isn't working again!
+ * 3. uart isn't working again! done
  * 4. timer to count down in buzzers 60 seconds
  ************************************************************/

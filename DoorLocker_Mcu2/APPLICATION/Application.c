@@ -63,6 +63,7 @@ void Mc1_init(void)
 /***************************************************************************************
  * 									GLOBAL VARIABLES									*
  ***************************************************************************************/
+#define NEW_PASSWORD		0x65
 #define PASSWORD_ADDRESS 	0x0010
 #define MC2_READY			0xFC
 /* to inform MC1 that MC2 ready to receive */
@@ -77,6 +78,7 @@ void Mc1_init(void)
  *****************************************************************************/
 uint8 password[20];
 uint16 i;
+
 uint8 input;
 uint8 output;
 uint8 DELAY_DONE;
@@ -101,6 +103,8 @@ int main(void)/*MCU2*/
 	EEPROM_init();
 	DCMOTOR_init();
 	Mc1_init();
+
+#if FALSE
 	/* set the manufacturer password (DEFAULT)*/
 	uint8 default_password[20] = "444444#";
 	for(uint16 i = 0 ; i < 19 ; ++i)
@@ -109,6 +113,8 @@ int main(void)/*MCU2*/
 		_delay_ms(10);
 	}
 	_delay_ms(300);
+#endif
+
 	/* getting the stored password */
 	for (uint16 i = 0; i < 19; ++i) {
 		EEPROM_readByte(PASSWORD_ADDRESS + i , password + i);
@@ -122,8 +128,16 @@ int main(void)/*MCU2*/
 
 	while(TRUE)
 	{
-
 		/* Application code*/
+
+		if(UART_receiveByte() == TRUE)
+		{
+
+		}
+		else if(UART_receiveByte() == NEW_PASSWORD)
+		{
+
+		}
 
 	}
 

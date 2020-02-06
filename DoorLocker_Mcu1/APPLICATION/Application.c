@@ -139,6 +139,7 @@ int main(void)/*MCU1*/
 	_delay_ms(1000);
 	if(flag) /*new launch*/
 	{
+		newpass : /*label*/
 		same = FALSE;
 		LCD_clearScreen();
 		LCD_displayOnColRow(0 , 0 , (uint8*)"enter new pass:");
@@ -175,6 +176,11 @@ int main(void)/*MCU1*/
 			}
 			else
 			{
+				//while(UART_receiveByte() != MC2_READY){}
+				UART_sendByte(NEW_PASSWORD);
+				UART_sendString(password);
+				//_delay_ms(5);
+				UART_clearPort();
 				LCD_clearScreen();
 				LCD_displayString((uint8*)"success!");
 				cnt = 0;
@@ -190,7 +196,7 @@ int main(void)/*MCU1*/
 			int g = 12;
 			while(g--)
 			{
-				_delay_ms(5000);
+				_delay_ms(100);
 			}
 			CLEAR_BIT(PORTD , 6);
 		}
@@ -238,9 +244,10 @@ int main(void)/*MCU1*/
 			int g = 12;
 			while(g--)
 			{
-				_delay_ms(5000);
+				_delay_ms(100);
 			}
 			CLEAR_BIT(PORTD , 6);
+			goto newpass;
 		}
 	}
 	while(TRUE)
@@ -297,7 +304,7 @@ int main(void)/*MCU1*/
 				int g = 12;
 				while(g--)
 				{
-					_delay_ms(5000);
+					_delay_ms(100);
 				}
 				CLEAR_BIT(PORTD , 6);
 			}
@@ -308,7 +315,8 @@ int main(void)/*MCU1*/
 				/* inform mc2 to move the motor here for 60 seconds */
 				while(UART_receiveByte() != MC2_READY){}
 				UART_sendByte(TRUE);
-
+				//_delay_ms(5);
+				UART_clearPort();
 				/* any protocol can be shown in lcd or any thing in the HMI here */
 
 			}
@@ -357,7 +365,7 @@ int main(void)/*MCU1*/
 				int g = 12;
 				while(g--)
 				{
-					_delay_ms(5000);
+					_delay_ms(100);
 				}
 				CLEAR_BIT(PORTD , 6);
 			}
@@ -399,9 +407,11 @@ int main(void)/*MCU1*/
 					}
 					else
 					{
-						while(UART_receiveByte() != MC2_READY){}
+						//while(UART_receiveByte() != MC2_READY){}
 						UART_sendByte(NEW_PASSWORD);
 						UART_sendString(password);
+						//_delay_ms(5);
+						UART_clearPort();
 						LCD_clearScreen();
 						LCD_displayString((uint8*)"success!");
 						cnt = 0;
@@ -417,17 +427,12 @@ int main(void)/*MCU1*/
 					int g = 12;
 					while(g--)
 					{
-						_delay_ms(5000);
+						_delay_ms(100);
 					}
 					CLEAR_BIT(PORTD , 6);
+					goto newpass;
 				}
 			}
 		}
 	}
 }
-/************************************ REMINDER LIST ************************
- * 1. the counter 3 times that calls the buzzer done
- * 2. the code that moves the motor cw and A-cw done
- * 3. uart isn't working again! done
- * 4. timer to count down in buzzers 60 seconds
- ************************************************************/

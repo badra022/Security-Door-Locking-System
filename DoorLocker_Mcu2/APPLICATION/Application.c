@@ -52,18 +52,18 @@ void Mc1_init(void)
 	 ***************************************************/
 
 	UART_ConfigType UART_configStruct = {	UART_PARITY_BIT_DISABLE ,
-											UART_PARITY_DISABLE ,
-											UART_1_STOP_BIT ,
-											UART_8_BIT ,
-											UART_2X ,
-											UART_ASYNCHRONOUS_OPERATION ,};
+			UART_PARITY_DISABLE ,
+			UART_1_STOP_BIT ,
+			UART_8_BIT ,
+			UART_2X ,
+			UART_ASYNCHRONOUS_OPERATION ,};
 
 	UART_init(&UART_configStruct);
 }
 /***************************************************************************************
  * 									GLOBAL VARIABLES									*
  ***************************************************************************************/
-#define PASSWORD_ADDRESS 	(uint16)0x10
+#define PASSWORD_ADDRESS 	0x0010
 #define MC2_READY			0xFC
 /* to inform MC1 that MC2 ready to receive */
 #define MC1_READY			0xAB
@@ -83,20 +83,48 @@ uint8 DELAY_DONE;
 /***************************************************************************************
  * 									MAIN  FUNCTION										*
  ***************************************************************************************/
+
+/*****************************************
+ *
+  	//for MC1 receive and MC2 transmit
+ 	UART_sendByte(MC2_READY);
+	while(UART_receiveByte() != MC1_READY){}
+
+	//for MC1 transmit and MC2 receive
+	while(UART_receiveByte() != MC1_READY){}
+	send(MC2_READY);
+ *****************************************/
+
 int main(void)/*MCU2*/
 {
 	/*initializaiton code*/
-#if 0
+	EEPROM_init();
+	DCMOTOR_init();
 	Mc1_init();
-	uint8 str[20] = "I am micro 1#";
-	UART_sendByte(MC2_READY);
-	UART_sendString(str);
-#endif
-	Mc1_init();
-	uint8 str[20] = "I am micro 1#";
-	UART_sendByte(MC2_READY);
+	uint8 default_password[20] = "444444#";
+	for(uint16 i = 0 ; i < 19 ; ++i)
+	{
+		EEPROM_writeByte(PASSWORD_ADDRESS + i , default_password[i]);
+	}
+
+	for (uint16 i = 0; i < 20; ++i) {
+		EEPROM_readByte(PASSWORD_ADDRESS + i , &password[i]);
+	}
+	/*
+	int i = 0;
+	while(password[i] != '\0')
+	{
+		i++;
+	}
+	password[i] = '#';
+	i = 0;
+	*/
+  	//for MC1 receive and MC2 transmit
+	uint8 passwords = "hhhh!#";
 	while(UART_receiveByte() != MC1_READY){}
-	UART_sendString(str);
+	UART_sendString(passwords);
+
+
 	while(TRUE)
 	{
 

@@ -13,29 +13,9 @@
  * 									INCLUDES									 *
  *********************************************************************************/
 #include"../MCAL/uart.h"
-#include"../MCAL/timer0.h"
 #include"../ECUAL/external_eeprom.h"
 #include"../ECUAL/dc_motor.h"
-/***************************************************************************************
- * 									GLOBAL VARIABLES									*
- ***************************************************************************************/
-#define PASSWORD_ADDRESS 	(uint16)0x10
-#define MC2_READY			0x00
-/* to inform MC1 that MC2 ready to receive */
-#define MC1_READY			0x01
-/* to inform MC2 that MC1 ready to receive */
-/*****************************************************************************
- *  so the protocol goes as follows
- * 1. if MC1 finished some code and want to transmit byte or string to MC2
- * 	it must check at MC2_READY flag , once it's received it can transmit the data to MC2
- * 2. if MC2 finished some code and want to transmit byte or string to MC2
- * 	it must check at MC1_READY flag , once it's received it can transmit the data to MC1
- *****************************************************************************/
-uint8 password[20];
-uint16 i;
-uint8 input;
-uint8 output;
-uint8 DELAY_DONE;
+
 /*********************************************************************************
  * 									APPLICATION									 *
  *********************************************************************************/
@@ -56,7 +36,7 @@ uint8 DELAY_DONE;
  * 8. any check for password has 3 trials if exceeded it will activate the buzzer for 60 sec
  ************************************************************************/
 
-void Mcu1_init(void)
+void Mc1_init(void)
 {
 	/**************************************************
 	 * [name] : UART_ConfigType
@@ -80,19 +60,43 @@ void Mcu1_init(void)
 
 	UART_init(&UART_configStruct);
 }
-
+/***************************************************************************************
+ * 									GLOBAL VARIABLES									*
+ ***************************************************************************************/
+#define PASSWORD_ADDRESS 	(uint16)0x10
+#define MC2_READY			0xFC
+/* to inform MC1 that MC2 ready to receive */
+#define MC1_READY			0xAB
+/* to inform MC2 that MC1 ready to receive */
+/*****************************************************************************
+ *  so the protocol goes as follows
+ * 1. if MC1 finished some code and want to transmit byte or string to MC2
+ * 	it must check at MC2_READY flag , once it's received it can transmit the data to MC2
+ * 2. if MC2 finished some code and want to transmit byte or string to MC2
+ * 	it must check at MC1_READY flag , once it's received it can transmit the data to MC1
+ *****************************************************************************/
+uint8 password[20];
+uint16 i;
+uint8 input;
+uint8 output;
+uint8 DELAY_DONE;
 /***************************************************************************************
  * 									MAIN  FUNCTION										*
  ***************************************************************************************/
 int main(void)/*MCU2*/
 {
 	/*initializaiton code*/
-	EEPROM_init();
-	Mcu1_init();
-	DCMOTOR_init();
-
-	 /* continue */
-
+#if 0
+	Mc1_init();
+	uint8 str[20] = "I am micro 1#";
+	UART_sendByte(MC2_READY);
+	UART_sendString(str);
+#endif
+	Mc1_init();
+	uint8 str[20] = "I am micro 1#";
+	UART_sendByte(MC2_READY);
+	while(UART_receiveByte() != MC1_READY){}
+	UART_sendString(str);
 	while(TRUE)
 	{
 

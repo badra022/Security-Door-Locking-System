@@ -15,28 +15,7 @@
 #include"../ECUAL/lcd.h"
 #include"../ECUAL/keypad.h"
 #include"../MCAL/uart.h"
-#include"../MCAL/timer0.h"
-#include"../MCAL/timer1.h"
-/***************************************************************************************
- * 									GLOBAL VARIABLES									*
- ***************************************************************************************/
-#define PASSWORD_ADDRESS 	(uint16)0x10
-#define MC2_READY			0x00
-/* to inform MC1 that MC2 ready to receive */
-#define MC1_READY			0x01
-/* to inform MC2 that MC1 ready to receive */
-/*****************************************************************************
- *  so the protocol goes as follows
- * 1. if MC1 finished some code and want to transmit byte or string to MC2
- * 	it must check at MC2_READY flag , once it's received it can transmit the data to MC2
- * 2. if MC2 finished some code and want to transmit byte or string to MC2
- * 	it must check at MC1_READY flag , once it's received it can transmit the data to MC1
- *****************************************************************************/
-uint8 password[20];
-uint16 i;
-uint8 input;
-uint8 output;
-uint8 DELAY_DONE;
+
 /*********************************************************************************
  * 									APPLICATION									 *
  *********************************************************************************/
@@ -59,7 +38,7 @@ uint8 DELAY_DONE;
 
 
 
-void Mcu2_init(void)
+void Mc2_init(void)
 {
 	/**************************************************
 	 * [name] : UART_ConfigType
@@ -83,76 +62,51 @@ void Mcu2_init(void)
 
 	UART_init(&UART_configStruct);
 }
-/***********************************test*********************************************/
+/***************************************************************************************
+ * 									GLOBAL VARIABLES									*
+ ***************************************************************************************/
+#define PASSWORD_ADDRESS 	(uint16)0x10
+#define MC2_READY			0xFC
+/* to inform MC1 that MC2 ready to receive */
+#define MC1_READY			0xAB
+/* to inform MC2 that MC1 ready to receive */
+/*****************************************************************************
+ *  so the protocol goes as follows
+ * 1. if MC1 finished some code and want to transmit byte or string to MC2
+ * 	it must check at MC2_READY flag , once it's received it can transmit the data to MC2
+ * 2. if MC2 finished some code and want to transmit byte or string to MC2
+ * 	it must check at MC1_READY flag , once it's received it can transmit the data to MC1
+ *****************************************************************************/
+uint8 password[20];
+uint16 i;
+uint8 input;
+uint8 output;
 uint8 DELAY_DONE;
-void toggle(void)
-{
-	// toggle the led
-	g_t1tick--;
-	if(!g_t1tick)
-	{
-		DELAY_DONE = TRUE;
-	}
-
-}
-void TIMER1_delay_init(void)
-{
-
-/******************************************************
- * [name] : TIMER1_configType
- * [Type] : Structure
- * [Function] : TIMER1 Module Dynamic configuration
- * [Members] :
- * 			mode TIMER1_NORMAL or TIMER1_CTC (16bit only so it's not a conig for me)
- * 			output_mode TIMER1_NORMAL_OUTPUT or TIMER1_TOGGLE_OUTPUT etc..
- * 			compare_interrupt enable or disable
- * 			overflow_interrupt enable or disable
- * 			compare_value 0 -> 65535
- * 			initial_value 0 -> 65535
- ***************************************************/
-
-
-
-	TIMER1_configType TIMER1_configStruct = { 	TIMER1_CTC ,
-												TIMER0_F_CPU_1024 ,
-												ENABLE ,
-												DISABLE ,
-												7812 ,
-												0	};
-		TIMER1_init(&TIMER1_configStruct);
-		TIMER1_setCallBackCompareMode(toggle);
-
-}
-void TIMER1_delay(uint8 seconds)
-{
-	DELAY_DONE = FALSE;
-	g_t1tick =seconds;
-	TIMER1_start(TIMER0_F_CPU_1024);
-	while(!DELAY_DONE){}
-}
-/***********************************test*********************************************/
 /***************************************************************************************
  * 									MAIN  FUNCTION										*
  ***************************************************************************************/
+//LCD_displayString((uint8*)"hey!");
 int main(void)/*MCU1*/
 {
 	/*initializaiton code*/
+#if 0
 	LCD_init();
 	KEYPAD_init();
-	TIMER1_delay_init();
-	Mcu2_init();
-	GLOBAL_INTERRUPT_ENABLE();
-	LCD_displayOnColRow(0 , 4 , (uint8*)"welcome");
-	TIMER1_delay(3);
-	LCD_displayString((uint8*)"hey!");
-	//LCD_displayString((uint8*)"hey!");
-	LCD_clearScreen();
-	/******************************************************************
-	 * permanent task : try timer1 for the delay and figure the bug in timer0 another time
-	 ******************************************************************/
+	Mc2_init();
 
+	while(UART_receiveByte() != MC2_READY);
+	UART_receiveString(password);
+	LCD_displayString(password);
+#endif
+	uint8 password[20];
+	Mc2_init();
+	LCD_init();
+	while(UART_receiveByte() != MC2_READY){}
+	UART_sendByte(MC1_READY);
+	// must be nothing here to receive while the other still transmitting
+	UART_receiveString(password);
+	LCD_displayString(password);
 
-	/*continue */
 
 	while(TRUE)
 	{

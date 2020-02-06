@@ -87,26 +87,16 @@ void UART_sendString(const uint8 * str)
 		count++;
 	}
 }
-void UART_receiveString(uint8 * str)
+void UART_receiveString(uint8 *Str)
 {
-	uint8 count = 0;
-
-	do
+	uint8 i = 0;
+	Str[i] = UART_receiveByte();
+	while(Str[i] != '#')
 	{
-		str[count] = UART_receiveByte();
-		count++;
-	}while(str[count] != '*');
-
-	str[count] = '\0';
-	/****************ANOTHER METHOD****************************************
-	 * do
-	 * {
-	 * 		*str = UART_receiveByte();
-	 * 		str++;
-	 * 	}while(*str != '*');
-	 *
-	 * 	*str = '\0';
-	 ***********************************************************************/
+		i++;
+		Str[i] = UART_receiveByte();
+	}
+	Str[i] = '\0';
 }
 
 /*********************************************************************************

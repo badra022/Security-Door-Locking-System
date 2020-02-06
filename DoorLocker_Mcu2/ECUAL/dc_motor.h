@@ -22,15 +22,15 @@
  *********************************************************************************/
 #define DC_MOTOR_DIR	DDRB
 #define DC_MOTOR_PORT	PORTB
-#define IN1				2
+#define IN1				0
 #define IN2				1
-#define EN1				0
+#define EN1				2
 /*********************************************************************************
  * 								Function Declarations							 *
  *********************************************************************************/
 void DCMOTOR_init(void);
 
-void DCMOTOR_setSpeed(uint8 speed);
+void DCMOTOR_setSpeed(void);
 
 void DCMOTOR_toggleMove(void);
 

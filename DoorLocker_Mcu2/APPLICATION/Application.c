@@ -78,7 +78,6 @@ void Mc1_init(void)
  *****************************************************************************/
 uint8 password[20];
 uint16 i;
-
 uint8 input;
 uint8 output;
 uint8 DELAY_DONE;
@@ -125,6 +124,7 @@ int main(void)/*MCU2*/
 	while(UART_receiveByte() != MC1_READY){}
 	UART_sendString(password);
 
+	UART_sendByte(MC2_READY);
 
 	while(TRUE)
 	{
@@ -132,10 +132,42 @@ int main(void)/*MCU2*/
 
 		if(UART_receiveByte() == TRUE)
 		{
+			DCMOTOR_move();
+			DCMOTOR_setSpeed();
+			_delay_ms(15000);
+			DCMOTOR_toggleMove();
+			_delay_ms(15000);
+			DCMOTOR_stop();
+
+			UART_sendByte(MC2_READY);
 
 		}
 		else if(UART_receiveByte() == NEW_PASSWORD)
 		{
+			/* set the user password */
+			UART_receiveString(password);
+			int i = 0;
+			while(password[i] != '\0')
+			{
+				i++;
+			}
+			if(i < 20)
+			{
+				password[i] = '#';
+			}
+			else
+			{
+				password[19] = '#';
+			}
+			for(uint16 i = 0 ; i < 19 ; ++i)
+			{
+				EEPROM_writeByte(PASSWORD_ADDRESS + i , password[i]);
+				_delay_ms(10);
+			}
+			_delay_ms(300);
+
+
+			UART_sendByte(MC2_READY);
 
 		}
 

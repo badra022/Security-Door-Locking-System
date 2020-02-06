@@ -84,12 +84,14 @@ void Mc2_init(void)
  * 	it must check at MC1_READY flag , once it's received it can transmit the data to MC1
  *****************************************************************************/
 uint8 password[20];
+uint8 default_password[20] = "444444";
 uint8 same = FALSE;
 uint16 i;
 uint8 input;
 uint8 output;
 uint8 DELAY_DONE;
 uint8 cnt = 0;
+uint8 flag = TRUE;
 /***************************************************************************************
  * 									MAIN  FUNCTION										*
  ***************************************************************************************/
@@ -109,12 +111,12 @@ uint8 cnt = 0;
 int main(void)/*MCU1*/
 {
 	/*initializaiton code*/
-
 	KEYPAD_init();
 	LCD_init();
 	Mc2_init();
 
-	/*	LCD_displayOnColRow(0 , 4 , (uint8*)"welcome");
+	/*
+	LCD_displayOnColRow(0 , 4 , (uint8*)"welcome");
 	_delay_ms(3000);
 	LCD_clearScreen();
 	 */
@@ -124,9 +126,20 @@ int main(void)/*MCU1*/
 	UART_receiveString(password);
 	_delay_ms(100);
 	LCD_displayString(password);
-	_delay_ms(5000);
-	if(password == "444444") /*new launch*/
+
+	UART_clearPort();
+
+	for(int j = 0 ; j<20 ; j++)
 	{
+		if(password[j] != default_password[j])
+		{
+			flag = FALSE;
+		}
+	}
+	_delay_ms(1000);
+	if(flag) /*new launch*/
+	{
+		same = FALSE;
 		LCD_clearScreen();
 		LCD_displayOnColRow(0 , 0 , (uint8*)"enter new pass:");
 		int i = 0;
@@ -156,14 +169,14 @@ int main(void)/*MCU1*/
 			if(!same)
 			{
 				LCD_clearScreen();
-				LCD_displayOnColRow(0 ,4 ,(uint8*)"Wrong password!");
+				LCD_displayOnColRow(0 ,0 ,(uint8*)"Wrong password!");
 				cnt++;
 				_delay_ms(2000);
 			}
 			else
 			{
 				LCD_clearScreen();
-				LCD_displayString((uint8*)"welcome");
+				LCD_displayString((uint8*)"success!");
 				cnt = 0;
 				_delay_ms(2000);
 			}
@@ -174,7 +187,11 @@ int main(void)/*MCU1*/
 			LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
 			SET_BIT(DDRD , 6);
 			SET_BIT(PORTD , 6);
-			_delay_ms(60000);
+			int g = 12;
+			while(g--)
+			{
+				_delay_ms(5000);
+			}
 			CLEAR_BIT(PORTD , 6);
 		}
 	}
@@ -201,7 +218,7 @@ int main(void)/*MCU1*/
 			{
 				cnt++;
 				LCD_clearScreen();
-				LCD_displayOnColRow(0 ,4 ,(uint8*)"Wrong password!");
+				LCD_displayOnColRow(0 ,0 ,(uint8*)"Wrong password!");
 				_delay_ms(2000);
 			}
 			else
@@ -218,7 +235,11 @@ int main(void)/*MCU1*/
 			LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
 			SET_BIT(DDRD , 6);
 			SET_BIT(PORTD , 6);
-			_delay_ms(60000);
+			int g = 12;
+			while(g--)
+			{
+				_delay_ms(5000);
+			}
 			CLEAR_BIT(PORTD , 6);
 		}
 	}
@@ -226,9 +247,10 @@ int main(void)/*MCU1*/
 	{
 
 		/* Application code*/
+		UART_clearPort();
 		LCD_clearScreen();
-		LCD_displayOnColRow(0 , 0 , "+ : open door");
-		LCD_displayOnColRow(1 , 0 , "- : change pass");
+		LCD_displayOnColRow(0 , 0 ,(uint8*)"+ : open door");
+		LCD_displayOnColRow(1 , 0 ,(uint8*)"- : change pass");
 		same = FALSE;
 		cnt = 0;
 		if(KEYPAD_getPressed() == '+')
@@ -255,14 +277,14 @@ int main(void)/*MCU1*/
 				{
 					cnt++;
 					LCD_clearScreen();
-					LCD_displayOnColRow(0 ,4 ,(uint8*)"Wrong password!");
+					LCD_displayOnColRow(0 ,0 ,(uint8*)"Wrong password!");
 					_delay_ms(2000);
 				}
 				else
 				{
 					cnt = 0;
 					LCD_clearScreen();
-					LCD_displayString((uint8*)"welcome");
+					LCD_displayString((uint8*)"Correct");
 					_delay_ms(2000);
 				}
 			}
@@ -272,13 +294,23 @@ int main(void)/*MCU1*/
 				LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
 				SET_BIT(DDRD , 6);
 				SET_BIT(PORTD , 6);
-				_delay_ms(60000);
+				int g = 12;
+				while(g--)
+				{
+					_delay_ms(5000);
+				}
 				CLEAR_BIT(PORTD , 6);
 			}
 			else
 			{
+				LCD_clearScreen();
+				LCD_displayString((uint8*)"Opening");
+				/* inform mc2 to move the motor here for 60 seconds */
 				while(UART_receiveByte() != MC2_READY){}
 				UART_sendByte(TRUE);
+
+				/* any protocol can be shown in lcd or any thing in the HMI here */
+
 			}
 		}
 		else if(current_key == '-')
@@ -304,7 +336,7 @@ int main(void)/*MCU1*/
 				{
 					cnt++;
 					LCD_clearScreen();
-					LCD_displayOnColRow(0 ,4 ,(uint8*)"Wrong password!");
+					LCD_displayOnColRow(0 ,0 ,(uint8*)"Wrong password!");
 					_delay_ms(2000);
 				}
 				else
@@ -322,7 +354,11 @@ int main(void)/*MCU1*/
 				LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
 				SET_BIT(DDRD , 6);
 				SET_BIT(PORTD , 6);
-				_delay_ms(60000);
+				int g = 12;
+				while(g--)
+				{
+					_delay_ms(5000);
+				}
 				CLEAR_BIT(PORTD , 6);
 			}
 			else
@@ -338,7 +374,7 @@ int main(void)/*MCU1*/
 					password[i] = current_key;
 					i++;
 				}
-				while(!same)
+				while(!same && cnt < 4)
 				{
 					same = TRUE;
 					LCD_clearScreen();
@@ -358,26 +394,40 @@ int main(void)/*MCU1*/
 					{
 						LCD_clearScreen();
 						LCD_displayOnColRow(0 ,4 ,(uint8*)"Wrong password!");
+						cnt++;
 						_delay_ms(2000);
 					}
 					else
 					{
+						while(UART_receiveByte() != MC2_READY){}
+						UART_sendByte(NEW_PASSWORD);
+						UART_sendString(password);
 						LCD_clearScreen();
-						LCD_displayOnColRow(0,0,(uint8*)"Success!");
+						LCD_displayString((uint8*)"success!");
+						cnt = 0;
 						_delay_ms(2000);
 					}
 				}
+				if(cnt == 4)
+				{
+					LCD_clearScreen();
+					LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
+					SET_BIT(DDRD , 6);
+					SET_BIT(PORTD , 6);
+					int g = 12;
+					while(g--)
+					{
+						_delay_ms(5000);
+					}
+					CLEAR_BIT(PORTD , 6);
+				}
 			}
-
 		}
-
 	}
-
-
 }
 /************************************ REMINDER LIST ************************
  * 1. the counter 3 times that calls the buzzer done
- * 2. the code that moves the motor cw and A-cw
+ * 2. the code that moves the motor cw and A-cw done
  * 3. uart isn't working again! done
  * 4. timer to count down in buzzers 60 seconds
  ************************************************************/

@@ -22,7 +22,7 @@ void DCMOTOR_init(void)
 	SET_BIT(DC_MOTOR_DIR , IN2);
 	SET_BIT(DC_MOTOR_DIR , EN1);
 }
-void DCMOTOR_setSpeed(uint8 speed)
+void DCMOTOR_setSpeed(void)
 {
 	SET_BIT(DC_MOTOR_PORT , EN1);
 }

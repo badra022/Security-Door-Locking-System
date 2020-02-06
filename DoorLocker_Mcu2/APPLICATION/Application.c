@@ -101,20 +101,20 @@ int main(void)/*MCU2*/
 	EEPROM_init();
 	DCMOTOR_init();
 	Mc1_init();
-#if 0
 	/* set the manufacturer password (DEFAULT)*/
 	uint8 default_password[20] = "444444#";
 	for(uint16 i = 0 ; i < 19 ; ++i)
 	{
 		EEPROM_writeByte(PASSWORD_ADDRESS + i , default_password[i]);
+		_delay_ms(10);
 	}
 	_delay_ms(300);
 	/* getting the stored password */
 	for (uint16 i = 0; i < 19; ++i) {
 		EEPROM_readByte(PASSWORD_ADDRESS + i , password + i);
+		_delay_ms(10);
 	}
-	password[4] = '#';
-#endif
+	//password[4] = '#';
 	//for MC1 receive and MC2 transmit
 	while(UART_receiveByte() != MC1_READY){}
 	UART_sendString(password);

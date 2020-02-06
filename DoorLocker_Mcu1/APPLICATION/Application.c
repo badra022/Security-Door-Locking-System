@@ -82,7 +82,7 @@ void Mc2_init(void)
  * 2. if MC2 finished some code and want to transmit byte or string to MC2
  * 	it must check at MC1_READY flag , once it's received it can transmit the data to MC1
  *****************************************************************************/
-uint8 password[20] = "44444";
+uint8 password[20] = "123456";
 uint8 same = FALSE;
 uint16 i;
 uint8 input;
@@ -120,7 +120,9 @@ int main(void)/*MCU1*/
 	//for MC1 receive and MC2 transmit
 	UART_sendByte(MC1_READY);
 	UART_receiveString(password);
-
+	_delay_ms(100);
+	LCD_displayString(password);
+#if 0
 	if(*password == "44444") /*new launch*/
 	{
 		LCD_clearScreen();
@@ -195,8 +197,10 @@ int main(void)/*MCU1*/
 			}
 		}
 	}
+#endif
 	while(TRUE)
 	{
+#if 0
 		/* Application code*/
 		LCD_clearScreen();
 		LCD_displayOnColRow(0 , 0 , "+ : open door");
@@ -312,11 +316,14 @@ int main(void)/*MCU1*/
 				}
 			}
 		}
-
+#endif
 	}
+
 
 }
 /************************************ REMINDER LIST ************************
  * 1. the counter 3 times that calls the buzzer
  * 2. the code that moves the motor cw and A-cw
+ * 3. uart isn't working again!
+ * 4. timer to count down in buzzers 60 seconds
  ************************************************************/

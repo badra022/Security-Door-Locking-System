@@ -102,7 +102,8 @@ int main(void)/*MCU2*/
 	EEPROM_init();
 	DCMOTOR_init();
 	Mc1_init();
-
+	SET_BIT(DDRD , 3);
+	CLEAR_BIT(PORTD , 3);
 #if FALSE
 	/* set the manufacturer password (DEFAULT)*/
 	uint8 default_password[20] = "444444#";
@@ -142,7 +143,7 @@ int main(void)/*MCU2*/
 			UART_sendByte(MC2_READY);
 
 		}
-		else if(UART_receiveByte() == NEW_PASSWORD)
+		if(UART_receiveByte() == NEW_PASSWORD)
 		{
 			/* set the user password */
 			UART_receiveString(password);
@@ -164,7 +165,8 @@ int main(void)/*MCU2*/
 				EEPROM_writeByte(PASSWORD_ADDRESS + i , password[i]);
 				_delay_ms(10);
 			}
-			_delay_ms(300);
+			SET_BIT(PORTD , 3);
+			_delay_ms(3000);
 
 
 			UART_sendByte(MC2_READY);

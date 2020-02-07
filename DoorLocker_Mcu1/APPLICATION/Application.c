@@ -151,6 +151,7 @@ int main(void)/*MCU1*/
 			password[i] = current_key;
 			i++;
 		}
+		password[i] = '#';
 		while(!same && cnt < 4)
 		{
 			same = TRUE;
@@ -176,7 +177,7 @@ int main(void)/*MCU1*/
 			}
 			else
 			{
-				//while(UART_receiveByte() != MC2_READY){}
+				while(UART_receiveByte() != MC2_READY){}
 				UART_sendByte(NEW_PASSWORD);
 				UART_sendString(password);
 				//_delay_ms(5);
@@ -328,7 +329,7 @@ int main(void)/*MCU1*/
 			{
 				same = TRUE;
 				LCD_clearScreen();
-				LCD_displayOnColRow(0 , 0 , (uint8*)"enter the pass:");
+				LCD_displayOnColRow(0 , 0 , (uint8*)"enter old pass:");
 				int i = 0;
 				LCD_goToColRow(1 , 0);
 				while(KEYPAD_getPressed() != '=')
@@ -382,6 +383,7 @@ int main(void)/*MCU1*/
 					password[i] = current_key;
 					i++;
 				}
+				password[i] = '#';
 				while(!same && cnt < 4)
 				{
 					same = TRUE;
@@ -407,7 +409,8 @@ int main(void)/*MCU1*/
 					}
 					else
 					{
-						//while(UART_receiveByte() != MC2_READY){}
+						/************************************************/
+						while(UART_receiveByte() != MC2_READY){}
 						UART_sendByte(NEW_PASSWORD);
 						UART_sendString(password);
 						//_delay_ms(5);

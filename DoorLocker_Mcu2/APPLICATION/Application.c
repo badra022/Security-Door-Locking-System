@@ -15,7 +15,26 @@
 #include"../MCAL/uart.h"
 #include"../ECUAL/external_eeprom.h"
 #include"../ECUAL/dc_motor.h"
-
+#include"../MCAL/timer1.h"
+/***************************************************************************************
+ * 									GLOBAL VARIABLES									*
+ ***************************************************************************************/
+#define NEW_PASSWORD		0x65
+#define PASSWORD_ADDRESS 	0x0010
+#define MC2_READY			0xFC
+/* to inform MC1 that MC2 ready to receive */
+#define MC1_READY			0xAB
+/* to inform MC2 that MC1 ready to receive */
+/*****************************************************************************
+ *  so the protocol goes as follows
+ * 1. if MC1 finished some code and want to transmit byte or string to MC2
+ * 	it must check at MC2_READY flag , once it's received it can transmit the data to MC2
+ * 2. if MC2 finished some code and want to transmit byte or string to MC2
+ * 	it must check at MC1_READY flag , once it's received it can transmit the data to MC1
+ *****************************************************************************/
+uint8 password[20];
+uint16 i;
+uint8 DELAY_DONE;
 /*********************************************************************************
  * 									APPLICATION									 *
  *********************************************************************************/
@@ -60,27 +79,56 @@ void Mc1_init(void)
 
 	UART_init(&UART_configStruct);
 }
-/***************************************************************************************
- * 									GLOBAL VARIABLES									*
- ***************************************************************************************/
-#define NEW_PASSWORD		0x65
-#define PASSWORD_ADDRESS 	0x0010
-#define MC2_READY			0xFC
-/* to inform MC1 that MC2 ready to receive */
-#define MC1_READY			0xAB
-/* to inform MC2 that MC1 ready to receive */
-/*****************************************************************************
- *  so the protocol goes as follows
- * 1. if MC1 finished some code and want to transmit byte or string to MC2
- * 	it must check at MC2_READY flag , once it's received it can transmit the data to MC2
- * 2. if MC2 finished some code and want to transmit byte or string to MC2
- * 	it must check at MC1_READY flag , once it's received it can transmit the data to MC1
- *****************************************************************************/
-uint8 password[20];
-uint16 i;
-uint8 input;
-uint8 output;
-uint8 DELAY_DONE;
+#if FALSE
+void countDown(void)
+{
+	/* printing the current remaining seconds to count in the lcd */
+	g_t1tick--;
+	PORTB ^= (1 << 7);
+	if(!g_t1tick)
+	{
+		DELAY_DONE = TRUE;
+	}
+
+}
+void TIMER1_delay_init(void)
+{
+
+	/******************************************************
+	 * [name] : TIMER1_configType
+	 * [Type] : Structure
+	 * [Function] : TIMER1 Module Dynamic configuration
+	 * [Members] :
+	 * 			mode TIMER1_NORMAL or TIMER1_CTC (16bit only so it's not a conig for me)
+	 * 			output_mode TIMER1_NORMAL_OUTPUT or TIMER1_TOGGLE_OUTPUT etc..
+	 * 			compare_interrupt enable or disable
+	 * 			overflow_interrupt enable or disable
+	 * 			compare_value 0 -> 65535
+	 * 			initial_value 0 -> 65535
+	 ***************************************************/
+
+
+
+	TIMER1_configType TIMER1_configStruct = { 	TIMER1_CTC ,
+			TIMER1_F_CPU_1024 ,
+			ENABLE ,
+			DISABLE ,
+			7812 ,
+			0	};
+	TIMER1_init(&TIMER1_configStruct);
+	TIMER1_setCallBackCompareMode(countDown);
+	TIMER1_stop();
+}
+void TIMER1_delay(uint8 seconds)
+{
+	DELAY_DONE = FALSE;
+	g_t1tick =seconds;
+	//LCD_clearScreen();
+	//LCD_displayString("hey!");
+	TIMER1_start(TIMER1_F_CPU_1024);
+	while(!DELAY_DONE){}
+}
+#endif
 /***************************************************************************************
  * 									MAIN  FUNCTION										*
  ***************************************************************************************/
@@ -99,6 +147,7 @@ uint8 DELAY_DONE;
 int main(void)/*MCU2*/
 {
 	/*initializaiton code*/
+	//TIMER1_delay_init();
 	EEPROM_init();
 	DCMOTOR_init();
 	Mc1_init();
@@ -106,7 +155,7 @@ int main(void)/*MCU2*/
 	CLEAR_BIT(PORTD , 3);
 #if FALSE
 	/* set the manufacturer password (DEFAULT)*/
-	uint8 default_password[20] = "444444#";
+	uint8 default_password[20] = "444444";
 	for(uint16 i = 0 ; i < 19 ; ++i)
 	{
 		EEPROM_writeByte(PASSWORD_ADDRESS + i , default_password[i]);
@@ -120,8 +169,16 @@ int main(void)/*MCU2*/
 	for (i = 0; i < 19; ++i) {
 		EEPROM_readByte(PASSWORD_ADDRESS + i , password + i);
 		_delay_ms(10);
+		if(password[i] == '\0')
+		{
+			password[i] = '#';
+			break;
+		}
 	}
-	//password[19] = '#';
+	for(uint8 j = i + 1 ; j <20 ; j++)
+	{
+		password[j] = '\0';
+	}
 	//for MC1 receive and MC2 transmit
 	while(UART_receiveByte() != MC1_READY){}
 	UART_sendString(password);
@@ -131,16 +188,16 @@ int main(void)/*MCU2*/
 	while(TRUE)
 	{
 		/* Application code*/
-
+		UART_sendByte(MC2_READY);
+		_delay_ms(100);
 		if(UART_receiveByte() == TRUE)
 		{
 			DCMOTOR_move();
-			DCMOTOR_setSpeed();
-			_delay_ms(15000);
+			DCMOTOR_setSpeed(/*MAX*/);
+			_delay_ms(5000);
 			DCMOTOR_toggleMove();
-			_delay_ms(15000);
+			_delay_ms(5000);
 			DCMOTOR_stop();
-
 			UART_sendByte(MC2_READY);
 
 		}
@@ -166,14 +223,12 @@ int main(void)/*MCU2*/
 				EEPROM_writeByte(PASSWORD_ADDRESS + i , password[i]);
 				_delay_ms(10);
 			}
+			_delay_ms(100);
 			SET_BIT(PORTD , 3);
 			_delay_ms(3000);
-
-
+			CLEAR_BIT(PORTD ,  3);
 			UART_sendByte(MC2_READY);
-
 		}
-
 	}
 
 }

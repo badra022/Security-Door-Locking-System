@@ -191,9 +191,8 @@ int main(void)/*MCU2*/
 	{
 		/* Application code*/
 		PORTD ^=(1<<3);
-		while(UDR != MC1_READY){}
-		while(UDR != NEW_PASSWORD || UDR != TRUE){}
-		if(UDR == NEW_PASSWORD)
+		while(UART_receiveByte() != MC1_READY){}
+		if(UART_receiveByte() == NEW_PASSWORD)
 		{
 			/* set the user password */
 			UART_sendByte(MC2_READY);
@@ -222,9 +221,9 @@ int main(void)/*MCU2*/
 			CLEAR_BIT(PORTD ,  3);
 			UART_sendByte(MC2_READY);
 		}
-		if(UDR == TRUE)
+		else
 		{
-			UART_sendByte(MC2_READY);
+			//UART_sendByte(MC2_READY);
 			DCMOTOR_move();
 			DCMOTOR_setSpeed(/*MAX*/);
 			_delay_ms(5000);
@@ -234,5 +233,4 @@ int main(void)/*MCU2*/
 			UART_sendByte(MC2_READY);
 		}
 	}
-
 }

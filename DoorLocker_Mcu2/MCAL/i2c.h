@@ -6,7 +6,7 @@
  *
  * Description: Header file for the I2C(TWI) AVR driver
  *
- * Author: Mohamed Tarek
+ * Author: Ahmed Mohamed
  *
  *******************************************************************************/ 
 #ifndef I2C_H_

@@ -144,8 +144,10 @@ void newPassword(void)
 		}
 		else
 		{
-			while(UART_receiveByte() != MC2_READY){}
+			UART_sendByte(MC1_READY);
 			UART_sendByte(NEW_PASSWORD);
+			_delay_ms(2);
+			while(UART_receiveByte() != MC2_READY){}
 			UART_sendString(password);
 			_delay_ms(2);
 			//UART_clearPort();
@@ -242,7 +244,7 @@ void enterOldPasswordToOpenDoor(void)
 	{
 		same = TRUE;
 		LCD_clearScreen();
-		LCD_displayOnColRow(0 , 0 , (uint8*)"enter old pass:");
+		LCD_displayOnColRow(0 , 0 , (uint8*)"enter the pass:");
 		int i = 0;
 		LCD_goToColRow(1 , 0);
 		while(KEYPAD_getPressed() != '=')
@@ -278,9 +280,11 @@ void enterOldPasswordToOpenDoor(void)
 			LCD_clearScreen();
 			LCD_displayString((uint8*)"Opening");
 			/* inform mc2 to move the motor here for 15 seconds */
-			while(UART_receiveByte() != MC2_READY){}
+			UART_sendByte(MC1_READY);
 			UART_sendByte(TRUE);
-			_delay_ms(5);
+			_delay_ms(2);
+			while(UART_receiveByte() != MC2_READY){}
+			_delay_ms(2);
 			/* any protocol can be shown in lcd or any thing in the HMI here */
 		}
 	}
@@ -309,7 +313,7 @@ void  enterOldPasswordToChangePassword(void)
 	{
 		same = TRUE;
 		LCD_clearScreen();
-		LCD_displayOnColRow(0 , 0 , (uint8*)"enter the pass:");
+		LCD_displayOnColRow(0 , 0 , (uint8*)"enter old pass:");
 		int i = 0;
 		LCD_goToColRow(1 , 0);
 		while(KEYPAD_getPressed() != '=')
@@ -394,8 +398,10 @@ void  enterOldPasswordToChangePassword(void)
 				}
 				else
 				{
-					while(UART_receiveByte() != MC2_READY){}
+					UART_sendByte(MC1_READY);
 					UART_sendByte(NEW_PASSWORD);
+					_delay_ms(2);
+					while(UART_receiveByte() != MC2_READY){}
 					UART_sendString(password);
 					_delay_ms(2);
 					//UART_clearPort();

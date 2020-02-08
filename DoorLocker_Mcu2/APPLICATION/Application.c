@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Module: timer0 , uart , i2c
+ * Module: uart , i2c , eeprom , dc motors
  *
  * File Name: application.h
  *
@@ -116,11 +116,12 @@ int main(void)/*MCU2*/
 #endif
 
 	/* getting the stored password */
-	for (uint16 i = 0; i < 19; ++i) {
+	uint16 i = 0;
+	for (i = 0; i < 19; ++i) {
 		EEPROM_readByte(PASSWORD_ADDRESS + i , password + i);
 		_delay_ms(10);
 	}
-	//password[4] = '#';
+	//password[19] = '#';
 	//for MC1 receive and MC2 transmit
 	while(UART_receiveByte() != MC1_READY){}
 	UART_sendString(password);

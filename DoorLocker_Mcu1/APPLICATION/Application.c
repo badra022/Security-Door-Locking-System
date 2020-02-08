@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Module: timer0 , uart , i2c
+ * Module: timer0 , uart , lcd , keypad
  *
  * File Name: application.h
  *
@@ -15,6 +15,31 @@
 #include"../ECUAL/lcd.h"
 #include"../ECUAL/keypad.h"
 #include"../MCAL/uart.h"
+#include"../MCAL/timer1.h"
+
+/***************************************************************************************
+ * 									GLOBAL VARIABLES									*
+ ***************************************************************************************/
+#define NEW_PASSWORD		0x65
+#define PASSWORD_ADDRESS 	0x0010
+#define MC2_READY			0xFC
+/* to inform MC1 that MC2 ready to receive */
+#define MC1_READY			0xAB
+/* to inform MC2 that MC1 ready to receive */
+/*****************************************************************************
+ *  so the protocol goes as follows
+ * 1. if MC1 finished some code and want to transmit byte or string to MC2
+ * 	it must check at MC2_READY flag , once it's received it can transmit the data to MC2
+ * 2. if MC2 finished some code and want to transmit byte or string to MC2
+ * 	it must check at MC1_READY flag , once it's received it can transmit the data to MC1
+ *****************************************************************************/
+uint8 password[20];
+uint8 default_password[20] = "444444";
+uint8 same = FALSE;
+uint16 i;
+uint8 DELAY_DONE;
+uint8 cnt = 0;
+uint8 flag = TRUE;
 
 /*********************************************************************************
  * 									APPLICATION									 *
@@ -36,10 +61,7 @@
  * 8. any check for password has 3 trials if exceeded it will activate the buzzer for 60 sec
  ************************************************************************/
 
-void UART_clearPort(void)
-{
-	UDR = 0;
-}
+
 
 void Mc2_init(void)
 {
@@ -66,32 +88,137 @@ void Mc2_init(void)
 	UART_init(&UART_configStruct);
 	UART_clearPort();
 }
+void newPassword(void)
+{
+	newpass : /*label*/
+	same = FALSE;
+	LCD_clearScreen();
+	LCD_displayOnColRow(0 , 0 , (uint8*)"enter new pass:");
+	int i = 0;
+	LCD_goToColRow(1 , 0);
+	while(KEYPAD_getPressed() != '=')
+	{
+		LCD_displayCharacter('*');
+		password[i] = current_key;
+		i++;
+	}
+	password[i] = '#';
+	for(uint8 j = i + 1 ; j <20 ; j++)
+	{
+		password[j] = '\0';
+	}
+	while(!same && cnt < 3)
+	{
+		same = TRUE;
+		LCD_clearScreen();
+		LCD_displayOnColRow(0 , 0 , (uint8*)"confirm :");
+		int i = 0;
+		LCD_goToColRow(1 , 0);
+		while(KEYPAD_getPressed() != '=')
+		{
+			LCD_displayCharacter('*');
+			confirm[i] = current_key;
+			i++;
+		}
+		confirm[i] = '#';
+		for(uint8 j = i + 1 ; j <20 ; j++)
+		{
+			confirm[j] = '\0';
+		}
+		for(uint8 i = 0 ; i<20 ; i++)
+		{
+			if(confirm[i] != password[i])
+			{
+				same = FALSE;
+			}
+		}
+		if(!same)
+		{
+			LCD_clearScreen();
+			LCD_displayOnColRow(0 ,0 ,(uint8*)"Wrong password!");
+			cnt++;
+			_delay_ms(2000);
+		}
+		else
+		{
+			while(UART_receiveByte() != MC2_READY){}
+			UART_sendByte(NEW_PASSWORD);
+			UART_sendString(password);
+			_delay_ms(2);
+			UART_clearPort();
+			LCD_clearScreen();
+			LCD_displayString((uint8*)"success!");
+			cnt = 0;
+			_delay_ms(2000);
+		}
+	}
+	if(cnt == 3)
+	{
+		LCD_clearScreen();
+		LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
+		SET_BIT(DDRD , 6);
+		SET_BIT(PORTD , 6);
+		int g = 60;
+		while(g--)
+		{
+			LCD_goToColRow(1 , 5);
+			LCD_displayInt(g);
+			_delay_ms(1000);
+		}
+		CLEAR_BIT(PORTD , 6);
+		goto newpass;
+	}
+}
+#if FALSE
+void countDown(void)
+{
+	/* printing the current remaining seconds to count in the lcd */
+	g_t1tick--;
+	PORTB ^= (1 << 7);
+	if(!g_t1tick)
+	{
+		DELAY_DONE = TRUE;
+	}
 
-/***************************************************************************************
- * 									GLOBAL VARIABLES									*
- ***************************************************************************************/
-#define NEW_PASSWORD		0x65
-#define PASSWORD_ADDRESS 	0x0010
-#define MC2_READY			0xFC
-/* to inform MC1 that MC2 ready to receive */
-#define MC1_READY			0xAB
-/* to inform MC2 that MC1 ready to receive */
-/*****************************************************************************
- *  so the protocol goes as follows
- * 1. if MC1 finished some code and want to transmit byte or string to MC2
- * 	it must check at MC2_READY flag , once it's received it can transmit the data to MC2
- * 2. if MC2 finished some code and want to transmit byte or string to MC2
- * 	it must check at MC1_READY flag , once it's received it can transmit the data to MC1
- *****************************************************************************/
-uint8 password[20];
-uint8 default_password[20] = "444444";
-uint8 same = FALSE;
-uint16 i;
-uint8 input;
-uint8 output;
-uint8 DELAY_DONE;
-uint8 cnt = 0;
-uint8 flag = TRUE;
+}
+void TIMER1_delay_init(void)
+{
+
+	/******************************************************
+	 * [name] : TIMER1_configType
+	 * [Type] : Structure
+	 * [Function] : TIMER1 Module Dynamic configuration
+	 * [Members] :
+	 * 			mode TIMER1_NORMAL or TIMER1_CTC (16bit only so it's not a conig for me)
+	 * 			output_mode TIMER1_NORMAL_OUTPUT or TIMER1_TOGGLE_OUTPUT etc..
+	 * 			compare_interrupt enable or disable
+	 * 			overflow_interrupt enable or disable
+	 * 			compare_value 0 -> 65535
+	 * 			initial_value 0 -> 65535
+	 ***************************************************/
+
+
+
+	TIMER1_configType TIMER1_configStruct = { 	TIMER1_CTC ,
+			TIMER1_F_CPU_1024 ,
+			ENABLE ,
+			DISABLE ,
+			7812 ,
+			0	};
+	TIMER1_init(&TIMER1_configStruct);
+	TIMER1_setCallBackCompareMode(countDown);
+	//TIMER1_stop();
+}
+void TIMER1_delay(uint8 seconds)
+{
+	DELAY_DONE = FALSE;
+	g_t1tick =seconds;
+	LCD_clearScreen();
+	//LCD_displayString("hey!");
+	TIMER1_start(TIMER1_F_CPU_1024);
+	while(!DELAY_DONE){}
+}
+#endif
 /***************************************************************************************
  * 									MAIN  FUNCTION										*
  ***************************************************************************************/
@@ -112,22 +239,22 @@ int main(void)/*MCU1*/
 {
 	/*initializaiton code*/
 	KEYPAD_init();
+	SET_BIT(DDRB , 7);
+	CLEAR_BIT(PORTB , 7);
 	LCD_init();
 	Mc2_init();
 
-	/*
+
 	LCD_displayOnColRow(0 , 4 , (uint8*)"welcome");
 	_delay_ms(3000);
 	LCD_clearScreen();
-	 */
-	UART_clearPort();
+
+	//UART_clearPort();
 	//for MC1 receive and MC2 transmit
 	UART_sendByte(MC1_READY);
 	UART_receiveString(password);
 	_delay_ms(100);
 	LCD_displayString(password);
-
-	UART_clearPort();
 
 	for(int j = 0 ; j<20 ; j++)
 	{
@@ -152,6 +279,10 @@ int main(void)/*MCU1*/
 			i++;
 		}
 		password[i] = '#';
+		for(uint8 j = i + 1 ; j <20 ; j++)
+		{
+			password[j] = '\0';
+		}
 		while(!same && cnt < 4)
 		{
 			same = TRUE;
@@ -194,10 +325,12 @@ int main(void)/*MCU1*/
 			LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
 			SET_BIT(DDRD , 6);
 			SET_BIT(PORTD , 6);
-			int g = 12;
+			int g = 60;
 			while(g--)
 			{
-				_delay_ms(100);
+				LCD_goToColRow(1 , 5);
+				LCD_displayInt(g);
+				_delay_ms(1000);
 			}
 			CLEAR_BIT(PORTD , 6);
 		}
@@ -242,10 +375,12 @@ int main(void)/*MCU1*/
 			LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
 			SET_BIT(DDRD , 6);
 			SET_BIT(PORTD , 6);
-			int g = 12;
+			int g = 60;
 			while(g--)
 			{
-				_delay_ms(100);
+				LCD_goToColRow(1 , 5);
+				LCD_displayInt(g);
+				_delay_ms(1000);
 			}
 			CLEAR_BIT(PORTD , 6);
 			goto newpass;
@@ -302,10 +437,12 @@ int main(void)/*MCU1*/
 				LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
 				SET_BIT(DDRD , 6);
 				SET_BIT(PORTD , 6);
-				int g = 12;
+				int g = 60;
 				while(g--)
 				{
-					_delay_ms(100);
+					LCD_goToColRow(1 , 5);
+					LCD_displayInt(g);
+					_delay_ms(1000);
 				}
 				CLEAR_BIT(PORTD , 6);
 			}
@@ -363,10 +500,12 @@ int main(void)/*MCU1*/
 				LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
 				SET_BIT(DDRD , 6);
 				SET_BIT(PORTD , 6);
-				int g = 12;
+				int g = 60;
 				while(g--)
 				{
-					_delay_ms(100);
+					LCD_goToColRow(1 , 5);
+					LCD_displayInt(g);
+					_delay_ms(1000);
 				}
 				CLEAR_BIT(PORTD , 6);
 			}
@@ -384,6 +523,14 @@ int main(void)/*MCU1*/
 					i++;
 				}
 				password[i] = '#';
+				for(uint8 j = i + 1 ; j <20 ; j++)
+				{
+					password[j] = '\0';
+				}
+				/****************************************************************
+				 * repeat this '\0' setting in password in all critical points
+				 * and store the array you need to confirm in confirm[20] then compare them
+				 ****************************************************************/
 				while(!same && cnt < 4)
 				{
 					same = TRUE;
@@ -427,10 +574,12 @@ int main(void)/*MCU1*/
 					LCD_displayOnColRow( 0 , 5 , (uint8*)"ALARM");
 					SET_BIT(DDRD , 6);
 					SET_BIT(PORTD , 6);
-					int g = 12;
+					int g = 60;
 					while(g--)
 					{
-						_delay_ms(100);
+						LCD_goToColRow(1 , 5);
+						LCD_displayInt(g);
+						_delay_ms(1000);
 					}
 					CLEAR_BIT(PORTD , 6);
 					goto newpass;

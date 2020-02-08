@@ -130,6 +130,8 @@ void UART_sendString(const uint8 * str);
 
 void UART_receiveString(uint8 * str);
 
+void UART_clearPort(void);
+
 #ifndef RECEIVE_INTERRUPT
 uint8 UART_receiveByte(void);
 #endif
